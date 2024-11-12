@@ -15,7 +15,7 @@ fi
 # 2 - Executar 3 students em background com argumentos
 for i in {1..3}; do
     echo "Executando student $i com $i-ºPedido"
-    ./student "$NAMEDPIPE" "$i-ºPedido" &> &
+    ./student "$NAMEDPIPE" "$i-ºPedido" &> /null &
 done
 
 # 3 - Executar o suporte agente com o named pipe

@@ -9,11 +9,13 @@ fi
 NAMEDPIPE="$1"
 
 # Se o pipe ainda não existir, aguardar sua criação
+# -p  verifica se o arquivo é um pipe nomeado
 while [[ ! -p $NAMEDPIPE ]]; do
   echo "Aguardando a criação do named pipe: $NAMEDPIPE..."
   sleep 1
 done
 
+#imprime uma mensagem indicando que o pipe foi encontrado.
 echo "Named pipe encontrado: $NAMEDPIPE"
 
 # Loop contínuo para ler e processar o named pipe
