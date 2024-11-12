@@ -1,38 +1,45 @@
 #!/bin/bash
 
 NAMEDPIPE="/tmp/suporte"
+NALUN=30  # Número total de alunos para inscrição
+NDISCIP=3  # Número de disciplinas
+NLUG=10  # Número de lugares por sala
+NSTUD=3  # Número de processos student
 
-# 0 - Boas Vindas
+# 1 - Exibir mensagem de boas-vindas e limpar a tela
+echo "===[ B E M - V I N D O  A O  S I G A ]==="
+sleep 2
+clear
 
-echo "===== B E N V I N D O AO S I G A ====="
-
-# 1 - Verificar se existe o named pipe, se não existir, criar 
-if [[ ! -p $NAMEDPIPE ]]; then
-    mkfifo "$NAMEDPIPE"
-    echo "Foi criado o $NAMEDPIPE"
+# 2 - Remover o named pipe se já existir e então criar um novo
+if [[ -p $NAMEDPIPE ]]; then
+    echo "Removendo named pipe existente: $NAMEDPIPE"
+    rm "$NAMEDPIPE"
 fi
 
-# 2 - Executar 3 students em background com argumentos
-for i in {1..3}; do
-    echo "Executando student $i com $i-ºPedido"
-    ./student "$NAMEDPIPE" "$i-ºPedido" &> /null &
+echo "Criando named pipe em $NAMEDPIPE"
+mkfifo "$NAMEDPIPE"
+
+# 3 - Calcular o número máximo de horários por disciplina
+NHOR=$(( (NALUN + NLUG - 1) / NLUG ))
+
+# 4 - Executar o support_agent em background, passando NALUN como argumento
+echo "Executando support_agent com $NALUN alunos"
+./support_agent "$NALUN" &
+
+# 5 - Dividir o número de alunos entre os processos student e executar cada um em background
+for i in $(seq 1 $NSTUD); do
+    ALUNO_INICIAL=$(( (i - 1) * (NALUN / NSTUD) ))
+    NUM_ALUNOS=$((NALUN / NSTUD))
+    echo "Executando student $i: aluno inicial=$ALUNO_INICIAL, número de alunos=$NUM_ALUNOS"
+    ./student "$i" "$ALUNO_INICIAL" "$NUM_ALUNOS" &
 done
 
-# 3 - Executar o suporte agente com o named pipe
-echo "Executando suporte agente"
-./suporte_agente.sh "$NAMEDPIPE" &
-
-# 4 - Esperar 1 segundo
-sleep 1
-
-# 5 - Mandar o texto 'quit' para o named pipe
-echo "Enviando comando 'quit' para o pipe"
-echo 'quit' > "$NAMEDPIPE"
-
-# 6 - Terminar todos os processos
+# 6 - Esperar até todos os processos (students e support_agent) terminarem
 wait
-echo "»»»»»» T O D O S P R O C E S S O S F I N A L I Z A D O S. ««««««."
 
 # 7 - Remover o named pipe
-echo "==== REMOVENDO O $NAMEDPIPE ====."
+echo "Removendo named pipe $NAMEDPIPE"
 rm "$NAMEDPIPE"
+
+echo "Todos os processos finalizaram."
